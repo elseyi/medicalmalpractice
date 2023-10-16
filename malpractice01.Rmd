@@ -1,6 +1,5 @@
 ---
-title: "Malpractice Project"
-author: "Elsie Yi"
+title: "Medical Malpractice"
 output: html_document
 date: "2023-10-16"
 ---
@@ -25,19 +24,52 @@ mm <- read.csv("/Users/elsieyi/Documents/Projects/Kaggle/Medical Malpractice/med
 library(ggplot2)
 ```
 
-### Initial notes regarding data
+### Data Processing
+Adjusting serverity into 3 ranges less severe (1-3), severe (4-6), most severe (7-9).
 ```{r}
-summary(mm)
+mm$severe_range <- cut(mm$Severity, breaks = c(min(mm$Severity),3,6,max(mm$Severity)), include.lowest= TRUE)
 ```
 
-Malpractice suit amount ranges from 
+Lowest amount of malpractice suit payment:
 ```{r}
-min(mm$Amount)-max(mm$Amount)
+min(mm$Amount)
+```
+
+Highest amount of malpractice suit payment:
+```{r}
+max(mm$Amount)
 ```
 
 ## Analyses
-### Private Attorney
+#### Private Attorney
+Without consideration for other variables, it can be seen that having a private attorney is statisitcally significant and is expected to increase the amount one can receive in the malpractice suit by an estimated \$106,848. 
 ```{r}
-pa <- glm(Amount ~ Private.Attorney + Insurance + Private.Attorney*Insurance, data = mm)
+pa <- lm(Amount ~ Private.Attorney, data = mm)
 summary(pa)
 ```
+
+#### Insurance Type
+There is evidence that insurance type is statistically significant for the amount of payment for all types: No Insurance, Private Insurance, Medicare/Medicaid, Workers Compensation, and Unknown.
+Private insurance is expected to increase the amount of payment compared to a patient who does not have insurance, however, one can expect to receive a reduction in payment given medicare/medicaid, workers compensation, or unknown insurance. 
+```{r}
+mm$Insurance <- relevel(factor(mm$Insurance), ref = "No Insurance")
+ins <- lm(Amount ~ Insurance, data = mm)
+summary(ins)
+```
+
+#### Specialty
+
+```{r}
+sp <- lm(Amount ~ Specialty, data = mm)
+summary(sp)
+```
+
+
+#### Age and Gender
+There is evidence suggesting that age and gender are statistically significant in amount of malpractice suit payment but not for an interaction term between them. This suggests that the effect age has on the amount received is not affected by gender. A 1 year increase in age is expected to result in an estimated reduction of \$1,196.53 in amount received and males are expected to receive an estimated \2,2638.15 more. 
+```{r}
+ag <- lm (Amount ~ Age + Gender + Age*Gender, data = mm)
+summary(ag)
+```
+
+
