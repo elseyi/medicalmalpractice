@@ -1,15 +1,13 @@
 ---
 title: "Medical Malpractice"
 output: html_document
+author: "Elsie Yi"
 date: "2023-10-16"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-# Medical Malpractice
-
 
 Nearly [50% of physicians age 55 and older have reported being sued](https://www.ama-assn.org/practice-management/sustainability/1-3-physicians-has-been-sued-age-55-1-2-hit-suit) according to the American Medical Association and in [2022, 31% of physicians have been sued](https://www.ama-assn.org/practice-management/sustainability/medical-liability-market-research). 
 With the prevalence of these malpractice suits I was interested to see if there is any association between the amount received by the patient and whether they had a private attorney, what type of insurance they had (private, uninsured, or government), severity of damage, as well as age and gender of patient. 
@@ -24,11 +22,16 @@ mm <- read.csv("/Users/elsieyi/Documents/Projects/Kaggle/Medical Malpractice/med
 library(ggplot2)
 ```
 
-### Data Processing
-Adjusting serverity into 3 ranges less severe (1-3), severe (4-6), most severe (7-9).
-```{r}
-mm$severe_range <- cut(mm$Severity, breaks = c(min(mm$Severity),3,6,max(mm$Severity)), include.lowest= TRUE)
-```
+### Initial data insights
+
+#### Data variables
+* **Amount**: claim payment in dollars
+* **Severity**: rating of damage to patient. 1 (emotional trauma) to 9 (death) || adjusted into range later on
+* **Age**: age of patient in years
+* **Private Attorney**: 0: not represented by private attorney || 1: represented by private attorney
+* **Specialty**: physician specialty 
+* **Insurance**: patient's medical insurance
+* **Gender**: patient's gender
 
 Lowest amount of malpractice suit payment:
 ```{r}
@@ -40,7 +43,7 @@ Highest amount of malpractice suit payment:
 max(mm$Amount)
 ```
 
-## Analyses
+## Analysis
 #### Private Attorney
 Without consideration for other variables, it can be seen that having a private attorney is statisitcally significant and is expected to increase the amount one can receive in the malpractice suit by an estimated \$106,848. 
 ```{r}
@@ -57,19 +60,35 @@ ins <- lm(Amount ~ Insurance, data = mm)
 summary(ins)
 ```
 
-#### Specialty
-
+#### Severity
+Adjusting severity into 3 ranges: less severe (1-3), severe (4-6), most severe (7-9).
+As a patient's severity of trauma 
 ```{r}
+mm$severe_range <- cut(mm$Severity, breaks = c(min(mm$Severity),3,6,max(mm$Severity)), include.lowest= TRUE)
+
+sev <- lm(Amount ~ severe_range, data = mm)
+summary(sev)
+```
+
+#### Specialty
+I chose the comparison group to be 'Pediatrics' as according to [past studies](https://www.ama-assn.org/system/files/policy-research-perspective-medical-liability-claim-frequency.pdf) this is a specialty in which fewer physicians faced lawsuits. 
+```{r}
+
 sp <- lm(Amount ~ Specialty, data = mm)
 summary(sp)
 ```
 
 
 #### Age and Gender
-There is evidence suggesting that age and gender are statistically significant in amount of malpractice suit payment but not for an interaction term between them. This suggests that the effect age has on the amount received is not affected by gender. A 1 year increase in age is expected to result in an estimated reduction of \$1,196.53 in amount received and males are expected to receive an estimated \2,2638.15 more. 
+There is evidence suggesting that age and gender are statistically significant in amount of malpractice suit payment but not for an interaction term between them. This suggests that the effect age has on the amount received is not affected by gender. A 1 year increase in age is expected to result in an estimated reduction of \$1,196.53 in amount received and males are expected to receive an estimated \$2,2638.15 more. 
 ```{r}
 ag <- lm (Amount ~ Age + Gender + Age*Gender, data = mm)
 summary(ag)
 ```
 
+#### All variables
+```{r}
+all.model <- lm(Amount ~ Private.Attorney + severe_range + Age + Gender + Insurance + Specialty, data = mm)
+summary(all.model)
+```
 
