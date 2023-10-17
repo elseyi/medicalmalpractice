@@ -13,14 +13,22 @@ Nearly [50% of physicians age 55 and older have reported being sued](https://www
 With the prevalence of these malpractice suits I was interested to see if there is any association between the amount received by the patient and whether they had a private attorney, what type of insurance they had (private, uninsured, or government), severity of damage, as well as age and gender of patient. 
 I am also curious to see if there is a greater proportion of suits given the type of specialty of the physician.
 
-## Dataset
-
-Data is from [Kaggle](https://www.kaggle.com/datasets/gabrielsantello/medical-malpractice-insurance-dataset/) and the analysis is completed in R. 
-Visualization was completed with Tableau.
+Load packages
 ```{r}
-mm <- read.csv("/Users/elsieyi/Documents/Projects/Kaggle/Medical Malpractice/medicalmalpractice.csv")
 library(ggplot2)
 ```
+
+Load data
+```{r}
+mm <- read.csv("/Users/elsieyi/Documents/Projects/Kaggle/Medical Malpractice/medicalmalpractice.csv")
+```
+
+## Dataset
+
+Data is from [Kaggle](https://www.kaggle.com/datasets/gabrielsantello/medical-malpractice-insurance-dataset/). The data set contains information about 79,210 claim payments made. 
+
+Visualization was completed with Tableau and the analysis is completed in R. 
+
 
 ### Initial data insights
 
@@ -43,7 +51,9 @@ Highest amount of malpractice suit payment:
 max(mm$Amount)
 ```
 
-## Analysis
+## Exploratory Data Analysis 
+
+## Modeling
 #### Private Attorney
 Without consideration for other variables, it can be seen that having a private attorney is statisitcally significant and is expected to increase the amount one can receive in the malpractice suit by an estimated \$106,848. 
 ```{r}
