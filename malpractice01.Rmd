@@ -30,7 +30,7 @@ mm$age_range <- cut(mm$Age, breaks = c(min(mm$Age), 18, 25, 35, 45, 55, 65, max(
 
 Data is from [Kaggle](https://www.kaggle.com/datasets/gabrielsantello/medical-malpractice-insurance-dataset/). The data set contains information about 79,210 claim payments made. 
 
-Visualization was completed with Tableau and R and the analysis is completed in R. 
+Visualization was completed with  [Tableau](https://public.tableau.com/app/profile/elsie.yi/viz/MedicalMalpractice_16975793446840/Dashboard1) and R and the analysis is completed in R. 
 
 
 ### Initial data insights
