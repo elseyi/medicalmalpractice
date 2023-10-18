@@ -16,7 +16,8 @@ I am also curious to see if there is a greater proportion of suits given the typ
 Load packages
 ```{r}
 library(ggplot2)
-library(GGally)
+library(dplyr)
+library(janitor)
 ```
 
 Load data
@@ -44,14 +45,21 @@ Visualization was completed with  [Tableau](https://public.tableau.com/app/profi
 * **Insurance**: patient's medical insurance
 * **Gender**: patient's gender
 
-Lowest amount of malpractice suit payment:
+There are 79,210 entries in the dataset. 
+Lowest amount of malpractice suit payment is $1576 to a patient age 75 who listed severity as level 3.
 ```{r}
 min(mm$Amount)
+mm[mm$Amount == '1576',]
 ```
 
-Highest amount of malpractice suit payment:
+Highest amount of malpractice suit payment is $926,411 to a patient age 50 who listed severity as level 6.
 ```{r}
 max(mm$Amount)
+mm[mm$Amount == '926411',]
+```
+
+```{r}
+summary(mm)
 ```
 
 ## Exploratory Data Analysis 
@@ -63,10 +71,51 @@ ggplot(data=as_set, aes(x = severe_range, y=Amount)) +
   scale_y_continuous(labels= scales::comma) + ggtitle("Average Claim Payment Amount vs Severity of Damage")
 ```
 
-Proportion of those in specified age groups in the damage severity groups. A majority of those in the [18,25], [25,35], [55,65], and [65,87] age group experienced damage in the [1,3] severity level whereas a majority in the [0,18], (35,45], and (45,55] age groups had severity level range of (3,6]
+Proportion of those in specified age groups in the damage severity groups. A majority of those in the [18,25], [25,35], [55,65], and [65,87] age group experienced damage in the [1,3] severity level whereas a majority in the [0,18], (35,45], and (45,55] age groups had severity level range of (3,6].
+
+The following boxplot shoes a breakdown of the amount of claim payment received and patient ages and severity rating. There is a greater range seen in amount for those who listed damage severity in the (6,9] group especially amonng those in the [0,18], [35,45], [45,55], and [55,65] age groups. 
 ```{r}
-prop.table(table(mm$age_range, mm$severe_range))
+mean_of_sum <- mm
+ggplot(mm, aes(x=age_range, y=Amount, fill=severe_range)) + geom_boxplot() +
+  labs(fill='Severity Range', x='Age Range', y='Claim Payment Amount') +
+  scale_y_continuous(labels= scales::comma) +
+  ggtitle("Claim Payment among Age and Severity Groups")
 ```
+
+The top 3 specialties with the most number of malpractice claims are Family Practice, General Surgery, and OBGYN. The lowest 3 specialties with the fewest number of malpractice claims are Pathology, Thoracic Surgery, and Physical Medicine. 
+```{r}
+mm %>%
+  tabyl(Specialty) %>%
+  arrange(desc(n))
+```
+
+Family practice physicians saw the greatest sum of claim payments but also saw 11,436 suits. The second highest specialty is OBGYN abd saw a total iof 8,876 suits.
+
+```{r}
+sp_am <- mm %>%
+  group_by (Specialty) %>%
+  summarise(across(c(Amount), sum))
+
+end_point = 0.5 +nrow(sp_am) +nrow(sp_am) -1
+ggplot(sp_am, aes(x=Specialty, y=Amount, las=2))+
+    scale_y_continuous(labels= scales::comma) +
+  geom_bar(stat = 'identity') + labs(x='Physician Specialty' ,y= 'Total Payment Amount') + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+Looking at average payment amount, we see that the two highest are no longer Family Practice or OBGYN but instead Dermatology and Pedatrics. This is interesting as the [AMA](https://www.ama-assn.org/system/files/policy-research-perspective-medical-liability-claim-frequency.pdf) reported both pediatrics and dermatologists to be of the three least likely to be sued specialties. Whereas OBGYN was listed as a high risk of being sued. The AMA report did not mention anything related to payment costs. 
+```{r}
+sp_am01 <- mm %>%
+  group_by (Specialty) %>%
+  summarise(across(c(Amount), mean))
+
+end_point = 0.5 +nrow(sp_am) +nrow(sp_am) -1
+ggplot(sp_am01, aes(x=Specialty, y=Amount, las=2))+
+    scale_y_continuous(labels= scales::comma) +
+  geom_bar(stat = 'identity') + labs(x='Physician Specialty' ,y= 'Average Payment Amount') + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
 
 
 ## Modeling
@@ -79,7 +128,7 @@ summary(pa)
 
 #### Insurance Type
 There is evidence that insurance type is statistically significant for the amount of payment for all types: No Insurance, Private Insurance, Medicare/Medicaid, Workers Compensation, and Unknown.
-Private insurance is expected to increase the amount of payment compared to a patient who does not have insurance, however, one can expect to receive a reduction in payment given medicare/medicaid, workers compensation, or unknown insurance. 
+Private insurance is expected to increase the amount of payment compared to a patient who does not have insurance, however, the opposite trend is seen in payment given medicare/medicaid, workers compensation, or unknown insurance. 
 ```{r}
 mm$Insurance <- relevel(factor(mm$Insurance), ref = "No Insurance")
 ins <- lm(Amount ~ Insurance, data = mm)
@@ -88,35 +137,27 @@ summary(ins)
 
 #### Severity
 Adjusting severity into 3 ranges: less severe (1-3), severe (4-6), most severe (7-9).
-As a patient's severity of trauma 
+As a patient's severity of trauma increases, so does estimated expected payment.
 ```{r}
 sev <- lm(Amount ~ severe_range, data = mm)
 summary(sev)
-
-sev2 <- lm(Amount ~ severe_range + Age, data = mm)
-summary(sev2)
 ```
 
-#### Specialty
-I chose the comparison group to be 'Pediatrics' as according to [past studies](https://www.ama-assn.org/system/files/policy-research-perspective-medical-liability-claim-frequency.pdf) this is a specialty in which fewer physicians faced lawsuits. 
+#### Age
+As the patient's age increases by 1 year, an expected estimated reduction of \$1,026.48 is expected in the total amount of claim payment. This could be due to greater comorbidities among older populations.
 ```{r}
-sp <- lm(Amount ~ Specialty, data = mm)
-summary(sp)
+age <- lm(Amount~ Age, data = mm)
+summary(age)
 ```
 
 
-#### Age and Gender
-There is evidence suggesting that age and gender are statistically significant in amount of malpractice suit payment but not for an interaction term between them. This suggests that the effect age has on the amount received is not affected by gender. A 1 year increase in age is expected to result in an estimated reduction of \$1,196.53 in amount received and males are expected to receive an estimated \$2,2638.15 more.
-
-A reduction in expected claim payment as age increases could be due to a greater presence of comorbidities seen in older patients. 
+#### Multiple regression model
+Noting the significance that severity range, presence of private attorney, type of insurance, and age, I put them all in a model together to see if they would still have statistical significance in the amount of claim payment received. The trend is similar with increasing severity leading to increase in claim payment. Presence of private attorney is also expected to lead to greater amount in payment. Compared to a patient with no insurance, only those with private insurance are expected to receive a greater amount of money. And as a patient's age increases, their payment amount is expected to decrease.
 ```{r}
-ag <- lm (Amount ~ Age + Gender + Age*Gender, data = mm)
-summary(ag)
+multiple_model <- lm(Amount ~ severe_range + Private.Attorney + Insurance + Age, data = mm)
+summary(multiple_model)
 ```
 
-#### All variables
-```{r}
-all.model <- lm(Amount ~ Private.Attorney + severe_range + Age + Gender + Insurance + Specialty, data = mm)
-summary(all.model)
-```
 
+#### Future directions
+I would like to look further into geographic location if the data is available. Those who file their suit in urban vs rural areas may see a difference in payment amount. I would also like to look at suits made in the dental field with different dental specialties. 
